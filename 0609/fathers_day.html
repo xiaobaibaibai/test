@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>最棒的老爸</title>
+    <style>
+        #header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: gold;
+            font-size: 2.5em;
+            padding: 20px 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            text-shadow: 0 0 10px #fff, 0 0 20px #ff0, 0 0 30px #ff8000;
+        }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Arial', sans-serif;
+        }
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: gold;
+            font-size: 3em;
+            text-align: center;
+            text-shadow: 0 0 10px #fff, 0 0 20px #ff0, 0 0 30px #ff8000;
+            opacity: 0;
+            animation: fadeIn 2s forwards 3s;
+        }
+        #blessing {
+            position: absolute;
+            top: 70%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1.5em;
+            text-align: center;
+            opacity: 0;
+            animation: fadeIn 2s forwards 5s;
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">最棒的老爸</div>
+    <canvas id="fireworks"></canvas>
+    <div id="message"></div>
+    <div id="blessing"></div>
+    <div id="danmu" style="position: absolute; font-size: 1em; opacity: 0; transition: opacity 1s;"></div>
+    <audio autoplay loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        const canvas = document.getElementById('fireworks');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.velocity = {
+                    x: (Math.random() - 0.5) * 8,
+                    y: (Math.random() - 0.5) * 8
+                };
+                this.alpha = 1;
+                this.decay = Math.random() * 0.015 + 0.01;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            update() {
+                this.velocity.y += 0.05;
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.alpha -= this.decay;
+            }
+        }
+
+        class Firework {
+            constructor() {
+                this.reset();
+                this.particles = [];
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = canvas.height;
+                this.targetY = Math.random() * canvas.height / 2;
+                this.speed = 2 + Math.random() * 3;
+                this.color = `hsl(${Math.random() * 60 + 20}, 100%, 50%)`;
+                this.exploded = false;
+            }
+
+            explode() {
+                for (let i = 0; i < 150; i++) {
+                    this.particles.push(new Particle(this.x, this.y, this.color));
+                }
+            }
+
+            update() {
+                if (!this.exploded) {
+                    this.y -= this.speed;
+                    if (this.y <= this.targetY) {
+                        this.exploded = true;
+                        this.explode();
+                    }
+                }
+
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    this.particles[i].update();
+                    if (this.particles[i].alpha <= 0) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+
+                if (this.exploded && this.particles.length === 0) {
+                    this.reset();
+                    showDanmu();
+                }
+            }
+
+            draw() {
+                if (!this.exploded) {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                }
+
+                for (const particle of this.particles) {
+                    particle.draw();
+                }
+            }
+        }
+
+        const fireworks = [];
+        for (let i = 0; i < 8; i++) {
+            fireworks.push(new Firework());
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (const firework of fireworks) {
+                firework.update();
+                firework.draw();
+            }
+        }
+
+        const messages = [
+            "爸爸我爱你",
+            "爸爸您辛苦了",
+            "谢谢您的养育之恩",
+            "您是我永远的榜样",
+            "感恩您的付出"
+        ];
+
+        function showDanmu() {
+            // 随机决定是否显示弹幕（50%概率）
+            if (Math.random() > 0.5) {
+                for (let i = 0; i < 3; i++) {
+                    const danmu = document.createElement('div');
+                    danmu.className = 'danmu-message';
+                    danmu.style.position = 'absolute';
+                    danmu.style.left = Math.random() * canvas.width * 0.6 + canvas.width * 0.2 + 'px';
+                    danmu.style.top = Math.random() * canvas.height * 0.4 + canvas.height * 0.1 + 'px';
+                    danmu.style.fontSize = Math.random() * 20 + 10 + 'px';
+                    danmu.style.opacity = '0';
+                    danmu.style.transition = 'opacity 1s';
+                    danmu.textContent = messages[Math.floor(Math.random() * messages.length)];
+                    danmu.style.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                    document.body.appendChild(danmu);
+                    setTimeout(() => {
+                       danmu.style.opacity = '1';
+                    danmu.style.transition = 'opacity 1s ease-in-out';
+                }, 100);
+
+                setTimeout(() => {
+                    danmu.style.opacity = '0';
+                    setTimeout(() => {
+                        document.body.removeChild(danmu);
+                    }, 1000);
+                }, 3000);
+                }
+            }
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
